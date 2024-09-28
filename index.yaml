@@ -11,4 +11,15 @@ entries:
     urls:
     - example-0.1.0.tgz
     version: 0.1.0
-generated: "2024-09-28T15:32:01.18906131Z"
+  kube-apiserver:
+  - apiVersion: v2
+    appVersion: 1.31.0
+    created: "2024-09-28T15:52:53.87289796Z"
+    description: A Helm chart to deploy a kube-apiserver
+    digest: be4e03869da72e991ea47becbd94778588add5412b6f3ecb026268790ecf7964
+    name: kube-apiserver
+    type: application
+    urls:
+    - kube-apiserver-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-09-28T15:52:53.87290309Z"
