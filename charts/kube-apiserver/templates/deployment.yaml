@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-apiserver
+  namespace: kube-system
+  labels:
+    app: kube-apiserver
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kube-apiserver
+  template:
+    metadata:
+      labels:
+        app: kube-apiserver
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: kube-apiserver
+            topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        node.kubernetes.io/control-plane: "true"
+      hostNetwork: true
+      volumes:
+      - name: etc-kubernetes
+        hostPath:
+          path: /etc/kubernetes
+          type: Directory
+      - name: etc-etcd
+        hostPath:
+          path: /etc/etcd
+          type: Directory
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "apiserver.kubernetes.local"
+      containers:
+      - name: kube-apiserver
+        image: registry.k8s.io/kube-apiserver:{{ .Values.apiserverVersion }} 
+        volumeMounts:
+        - mountPath: /etc/kubernetes
+          name: etc-kubernetes
+          readOnly: true
+        - mountPath: /etc/etcd
+          name: etc-etcd
+          readOnly: true
+        command: ["/go-runner"]
+        args:
+        - kube-apiserver
+        - --allow-privileged=true
+        - --audit-log-maxage=30
+        - --audit-log-maxbackup=3
+        - --audit-log-maxsize=100
+        - --audit-log-path=/var/log/kube-apiserver-audit.log
+        - --authorization-mode=Node,RBAC
+        - --bind-address=0.0.0.0
+        - --client-ca-file=/etc/kubernetes/ssl/ca.crt
+        - --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
+        - --etcd-servers={{ .Values.etcdServers }}
+        - --etcd-certfile=/etc/etcd/ssl/etcd-client.crt
+        - --etcd-keyfile=/etc/etcd/ssl/etcd-client.key
+        - --etcd-cafile=/etc/etcd/ssl/ca.crt
+        - --event-ttl=1h
+        - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml
+        - --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.crt
+        - --kubelet-client-certificate=/etc/kubernetes/ssl/kube-apiserver.crt
+        - --kubelet-client-key=/etc/kubernetes/ssl/kube-apiserver.key
+        - --runtime-config=api/all=true
+        - --service-account-key-file=/etc/kubernetes/ssl/service-accounts.crt
+        - --service-account-signing-key-file=/etc/kubernetes/ssl/service-accounts.key
+        - --service-account-issuer=https://apiserver.kubernetes.local:6443
+        - --service-cluster-ip-range={{ .Values.serviceClusterRange }}
+        - --service-node-port-range=30000-32767
+        - --tls-cert-file=/etc/kubernetes/ssl/kube-apiserver.crt
+        - --tls-private-key-file=/etc/kubernetes/ssl/kube-apiserver.key
+        - --v=2
